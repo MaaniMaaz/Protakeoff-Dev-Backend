@@ -22,4 +22,6 @@ router.post('/login', [
   body('password').notEmpty(),
 ], authController.login);
 
+router.get('/verify-email', authController.verifyEmail);
+
 module.exports = router; 

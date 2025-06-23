@@ -2,6 +2,8 @@ const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
+const crypto = require('crypto');
+const { sendEmail } = require('../utils/email');
 
 exports.register = async (req, res) => {
   const errors = validationResult(req);
@@ -15,6 +17,7 @@ exports.register = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Email already registered' });
     }
     const hashedPassword = await bcrypt.hash(password, 10);
+    const verificationToken = crypto.randomBytes(32).toString('hex');
     user = new User({
       email,
       password: hashedPassword,
@@ -22,9 +25,18 @@ exports.register = async (req, res) => {
       lastName,
       company,
       phone,
-      address
+      address,
+      verificationToken,
+      isVerified: false
     });
     await user.save();
+    // Send verification email
+    const verifyUrl = `${process.env.FRONTEND_URL || 'http://localhost:8080'}/verify-email?token=${verificationToken}&email=${email}`;
+    await sendEmail({
+      to: email,
+      subject: 'Verify your email',
+      html: `<p>Hello ${firstName},</p><p>Thank you for registering. Please verify your email by clicking the link below:</p><p><a href="${verifyUrl}">Verify Email</a></p>`
+    });
     return res.status(201).json({
       success: true,
       message: 'Registration successful. Please check your email for verification.',
@@ -77,6 +89,25 @@ exports.login = async (req, res) => {
         refreshToken
       }
     });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Server error', error: err.message });
+  }
+};
+
+exports.verifyEmail = async (req, res) => {
+  const { token, email } = req.query;
+  if (!token || !email) {
+    return res.status(400).json({ success: false, message: 'Invalid verification link.' });
+  }
+  try {
+    const user = await User.findOne({ email, verificationToken: token });
+    if (!user) {
+      return res.status(400).json({ success: false, message: 'Invalid or expired verification link.' });
+    }
+    user.isVerified = true;
+    user.verificationToken = undefined;
+    await user.save();
+    return res.json({ success: true, message: 'Email verified successfully.' });
   } catch (err) {
     return res.status(500).json({ success: false, message: 'Server error', error: err.message });
   }
