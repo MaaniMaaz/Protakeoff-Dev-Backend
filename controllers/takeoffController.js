@@ -14,7 +14,7 @@ async function uploadToCloudinary(filePath, resourceType = 'raw', folder = 'take
 // CREATE Takeoff
 exports.createTakeoff = async (req, res) => {
   try {
-    const { title, description, projectType, projectSize, zipCode, price, features, specifications, tags, isActive, createdBy } = req.body;
+    const { title, description, projectType, projectSize, zipCode, address, price, features, specifications, tags, isActive, expirationDate, createdBy } = req.body;
     let files = [];
     let images = [];
 
@@ -50,24 +50,43 @@ exports.createTakeoff = async (req, res) => {
       }
     }
 
+    // Parse features, specifications, tags if sent as JSON strings
+    let parsedFeatures = features;
+    let parsedSpecifications = specifications;
+    let parsedTags = tags;
+    if (typeof features === 'string') {
+      try { parsedFeatures = JSON.parse(features); } catch {}
+    }
+    if (typeof specifications === 'string') {
+      try { parsedSpecifications = JSON.parse(specifications); } catch {}
+    }
+    if (typeof tags === 'string') {
+      try { parsedTags = JSON.parse(tags); } catch {}
+    }
     const takeoff = new Takeoff({
       title,
       description,
       projectType,
       projectSize,
       zipCode,
+      address,
       price,
-      features,
-      specifications,
+      features: parsedFeatures,
+      specifications: parsedSpecifications,
+      expirationDate,
       files,
       images,
-      tags,
+      tags: parsedTags,
       isActive,
       createdBy
     });
     await takeoff.save();
     res.status(201).json(takeoff);
   } catch (err) {
+    if (err.name === 'ValidationError') {
+      const errors = Object.values(err.errors).map(e => e.message);
+      return res.status(400).json({ errors });
+    }
     res.status(500).json({ error: err.message });
   }
 };
@@ -96,7 +115,7 @@ exports.getTakeoffById = async (req, res) => {
 // UPDATE Takeoff
 exports.updateTakeoff = async (req, res) => {
   try {
-    const { title, description, projectType, projectSize, zipCode, price, features, specifications, tags, isActive } = req.body;
+    const { title, description, projectType, projectSize, zipCode, address, price, features, specifications, tags, isActive, expirationDate } = req.body;
     let files = [];
     let images = [];
 
@@ -132,16 +151,31 @@ exports.updateTakeoff = async (req, res) => {
       }
     }
 
+    // Parse features, specifications, tags if sent as JSON strings
+    let parsedFeatures = features;
+    let parsedSpecifications = specifications;
+    let parsedTags = tags;
+    if (typeof features === 'string') {
+      try { parsedFeatures = JSON.parse(features); } catch {}
+    }
+    if (typeof specifications === 'string') {
+      try { parsedSpecifications = JSON.parse(specifications); } catch {}
+    }
+    if (typeof tags === 'string') {
+      try { parsedTags = JSON.parse(tags); } catch {}
+    }
     const update = {
       title,
       description,
       projectType,
       projectSize,
       zipCode,
+      address,
       price,
-      features,
-      specifications,
-      tags,
+      features: parsedFeatures,
+      specifications: parsedSpecifications,
+      tags: parsedTags,
+      expirationDate,
       isActive,
       updatedAt: new Date()
     };
@@ -155,6 +189,10 @@ exports.updateTakeoff = async (req, res) => {
     if (!takeoff) return res.status(404).json({ error: 'Takeoff not found' });
     res.json(takeoff);
   } catch (err) {
+    if (err.name === 'ValidationError') {
+      const errors = Object.values(err.errors).map(e => e.message);
+      return res.status(400).json({ errors });
+    }
     res.status(500).json({ error: err.message });
   }
 };
