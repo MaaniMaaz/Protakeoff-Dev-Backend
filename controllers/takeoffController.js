@@ -91,10 +91,56 @@ exports.createTakeoff = async (req, res) => {
   }
 };
 
-// GET all Takeoffs
+// GET all Takeoffs with filtering, sorting, and pagination
 exports.getAllTakeoffs = async (req, res) => {
   try {
-    const takeoffs = await Takeoff.find().populate('createdBy', 'email firstName lastName');
+    const {
+      zipCode,
+      size,
+      type,
+      priceMin,
+      priceMax,
+      search,
+      sort,
+      page = 1,
+      limit = 9
+    } = req.query;
+
+    const filter = {};
+    if (zipCode) filter.zipCode = zipCode;
+    if (size) filter.projectSize = size.toLowerCase();
+    if (type) {
+      // type can be comma separated
+      const types = type.split(',').map(t => t.trim().toLowerCase());
+      filter.projectType = { $in: types };
+    }
+    if (priceMin || priceMax) {
+      filter.price = {};
+      if (priceMin) filter.price.$gte = Number(priceMin);
+      if (priceMax) filter.price.$lte = Number(priceMax);
+    }
+    if (search) {
+      filter.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
+        { zipCode: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    // Sorting
+    let sortOption = { createdAt: -1 };
+    if (sort === 'price_asc') sortOption = { price: 1 };
+    else if (sort === 'price_desc') sortOption = { price: -1 };
+    else if (sort === 'size') sortOption = { projectSize: 1 };
+    else if (sort === 'newest') sortOption = { createdAt: -1 };
+
+    // Pagination
+    const skip = (Number(page) - 1) * Number(limit);
+    const takeoffs = await Takeoff.find(filter)
+      .sort(sortOption)
+      .skip(skip)
+      .limit(Number(limit))
+      .populate('createdBy', 'email firstName lastName');
     res.json(takeoffs);
   } catch (err) {
     res.status(500).json({ error: err.message });
