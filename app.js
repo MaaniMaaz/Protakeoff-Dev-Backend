@@ -5,6 +5,7 @@ const express = require("express");
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
 const takeoffRoutes = require('./routes/takeoff');
+const cartRoutes = require('./routes/cart');
 
 const app = express();
 
@@ -18,6 +19,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/uploads', express.static('uploads'));
 app.use('/api/takeoffs', takeoffRoutes);
+app.use('/api/cart', cartRoutes);
 
 app.listen(PORT, () => {
     console.log("Server is running on port 3000");
