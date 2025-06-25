@@ -3,9 +3,10 @@ const { body } = require('express-validator');
 const router = express.Router();
 const userController = require('../controllers/userController');
 const auth = require('../middleware/auth');
+const { adminOnly } = require('../middleware/auth');
 
 // Get all users (admin only)
-router.get('/', auth, userController.getAllUsers);
+router.get('/', auth, adminOnly, userController.getAllUsers);
 
 // Get user by JWT (profile)
 router.get('/me', auth, userController.getUserByJWT);

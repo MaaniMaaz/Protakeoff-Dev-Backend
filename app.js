@@ -32,8 +32,30 @@ app.get("/", (req, res) => {
 mongoose.connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
-}).then(() => {
+}).then(async () => {
     console.log("MongoDB connected");
+    // Seed default admin user if not exists
+    const User = require('./models/User');
+    const bcrypt = require('bcryptjs');
+    const adminEmail = 'admin@protakeoff.com';
+    const adminPassword = 'admin123';
+    let admin = await User.findOne({ email: adminEmail });
+    if (!admin) {
+        const hashedPassword = await bcrypt.hash(adminPassword, 10);
+        admin = new User({
+            email: adminEmail,
+            password: hashedPassword,
+            firstName: 'Admin',
+            lastName: 'User',
+            company: 'ProTakeoff',
+            role: 'admin',
+            isVerified: true
+        });
+        await admin.save();
+        console.log('Default admin user created:', adminEmail, '/', adminPassword);
+    } else {
+        console.log('Default admin user already exists:', adminEmail);
+    }
 }).catch((err) => {
     console.error("MongoDB connection error:", err);
 });
