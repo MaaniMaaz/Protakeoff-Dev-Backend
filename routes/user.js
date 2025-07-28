@@ -6,7 +6,7 @@ const auth = require('../middleware/auth');
 const { adminOnly } = require('../middleware/auth');
 
 // Get all users (admin only)
-router.get('/', auth, adminOnly, userController.getAllUsers);
+router.get('/',userController.getAllUsers);
 
 // Get user by JWT (profile)
 router.get('/me', auth, userController.getUserByJWT);

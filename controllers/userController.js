@@ -1,11 +1,8 @@
 const User = require('../models/User');
 const { validationResult } = require('express-validator');
 
-// Get all users (admin only)
+// Get all users (no auth)
 exports.getAllUsers = async (req, res) => {
-  if (req.user.role !== 'admin') {
-    return res.status(403).json({ success: false, message: 'Access denied' });
-  }
   try {
     const users = await User.find({}, '-password -verificationToken -resetPasswordToken -resetPasswordExpires');
     res.json({ success: true, data: { users } });

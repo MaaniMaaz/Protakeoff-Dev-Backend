@@ -5,7 +5,9 @@ const express = require("express");
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
 const takeoffRoutes = require('./routes/takeoff');
+
 const cartRoutes = require('./routes/cart');
+const orderRoutes = require('./routes/order');
 
 const app = express();
 
@@ -13,13 +15,23 @@ const PORT = process.env.PORT || 3000;
 
 dotenv.config();
 app.use(express.json());
-app.use(cors());
+// CORS setup for credentials and specific origin
+app.use(cors({
+  origin: [
+    'http://localhost:8080',
+    'http://localhost:3000',
+    process.env.CLIENT_URL
+  ].filter(Boolean),
+  credentials: true,
+}));
+
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/uploads', express.static('uploads'));
 app.use('/api/takeoffs', takeoffRoutes);
 app.use('/api/cart', cartRoutes);
+app.use('/api/orders', orderRoutes);
 
 app.listen(PORT, () => {
     console.log("Server is running on port 3000");
