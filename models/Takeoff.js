@@ -21,7 +21,7 @@ const imageSchema = new mongoose.Schema({
 const takeoffSchema = new mongoose.Schema({
   title: { type: String, required: true },
   description: { type: String, required: true },
-  projectType: { type: String, enum: ['landscaping', 'irrigation', 'both'] },
+  projectType: { type: String, enum: ['landscaping', 'irrigation', 'bundle'] },
   projectSize: { type: String, enum: ['small', 'medium', 'large'] },
   zipCode: { type: String, required: true },
   address: { type: String, required: true },
