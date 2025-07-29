@@ -5,9 +5,9 @@ const express = require("express");
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
 const takeoffRoutes = require('./routes/takeoff');
-
 const cartRoutes = require('./routes/cart');
 const orderRoutes = require('./routes/order');
+const contactRoutes = require('./routes/contact');
 
 const app = express();
 
@@ -32,6 +32,7 @@ app.use('/uploads', express.static('uploads'));
 app.use('/api/takeoffs', takeoffRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/contact', contactRoutes);
 
 app.listen(PORT, () => {
     console.log("Server is running on port 3000");
@@ -48,6 +49,14 @@ mongoose.connect(process.env.MONGO_URI, {
     useUnifiedTopology: true,
 }).then(async () => {
     console.log("MongoDB connected");
+    console.log("MongoDB URI:", process.env.MONGO_URI);
+    console.log("Database name:", mongoose.connection.db.databaseName);
+    
+    // Test Contact model
+    const Contact = require('./models/Contact');
+    const contactCount = await Contact.countDocuments();
+    console.log("Total contacts in database:", contactCount);
+    
     // Seed default admin user if not exists
     const User = require('./models/User');
     const bcrypt = require('bcryptjs');
