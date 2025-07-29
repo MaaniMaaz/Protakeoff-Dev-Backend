@@ -21,6 +21,7 @@ app.use(cors({
     'http://localhost:8080',
     'http://localhost:3000',
     "https://protakeoff-dev-backend.onrender.com",
+    "https://pro-take-off.vercel.app",
     process.env.CLIENT_URL
   ].filter(Boolean),
   credentials: true,
