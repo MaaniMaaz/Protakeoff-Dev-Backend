@@ -15,11 +15,12 @@ const PORT = process.env.PORT || 3000;
 
 dotenv.config();
 app.use(express.json());
-// CORS setup for credentials and specific origin
+// CORS setup for credentials and specific origin   
 app.use(cors({
   origin: [
     'http://localhost:8080',
     'http://localhost:3000',
+    "https://protakeoff-dev-backend.onrender.com",
     process.env.CLIENT_URL
   ].filter(Boolean),
   credentials: true,
