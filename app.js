@@ -2,6 +2,8 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const express = require("express");
+const fs = require("fs");
+const path = require("path");
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
 const takeoffRoutes = require('./routes/takeoff');
@@ -14,6 +16,14 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 dotenv.config();
+
+// Ensure uploads directory exists
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+  console.log('Created uploads directory:', uploadsDir);
+}
+
 app.use(express.json());
 // CORS setup for credentials and specific origin   
 app.use(cors({
@@ -27,10 +37,18 @@ app.use(cors({
   credentials: true,
 }));
 
-
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
-app.use('/uploads', express.static('uploads'));
+
+// Serve static files from uploads directory with error handling
+app.use('/uploads', (req, res, next) => {
+  // Check if uploads directory exists
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+  next();
+}, express.static(uploadsDir));
+
 app.use('/api/takeoffs', takeoffRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
