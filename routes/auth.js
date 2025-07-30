@@ -27,16 +27,23 @@ router.post('/admin-login', [
   body('email').isEmail().withMessage('Valid email required'),
   body('password').notEmpty(),
 ], async (req, res) => {
-  const { email, password } = req.body;
-  const { validationResult } = require('express-validator');
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ success: false, errors: errors.array() });
-  }
-  const User = require('../models/User');
-  const bcrypt = require('bcryptjs');
-  const jwt = require('jsonwebtoken');
   try {
+    const { email, password } = req.body;
+    const { validationResult } = require('express-validator');
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, errors: errors.array() });
+    }
+    
+    if (!process.env.JWT_SECRET) {
+      console.error('JWT_SECRET environment variable is not set');
+      return res.status(500).json({ success: false, message: 'Server configuration error' });
+    }
+    
+    const User = require('../models/User');
+    const bcrypt = require('bcryptjs');
+    const jwt = require('jsonwebtoken');
+    
     const user = await User.findOne({ email });
     if (!user || user.role !== 'admin') {
       return res.status(403).json({ success: false, message: 'Admin access denied' });
@@ -61,6 +68,7 @@ router.post('/admin-login', [
       }
     });
   } catch (err) {
+    console.error('Admin login error:', err);
     return res.status(500).json({ success: false, message: 'Server error', error: err.message });
   }
 });

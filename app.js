@@ -36,20 +36,23 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/contact', contactRoutes);
 
-app.listen(PORT, () => {
-    console.log("Server is running on port 3000");
-});
-
 app.get("/", (req, res) => {
     res.send("Hello World");
 });
 
-
-// Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-}).then(async () => {
+// Connect to MongoDB with better error handling
+const connectDB = async () => {
+  try {
+    if (!process.env.MONGO_URI) {
+      console.error("MONGO_URI environment variable is not set");
+      return;
+    }
+    
+    await mongoose.connect(process.env.MONGO_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    
     console.log("MongoDB connected");
     console.log("MongoDB URI:", process.env.MONGO_URI);
     console.log("Database name:", mongoose.connection.db.databaseName);
@@ -81,6 +84,21 @@ mongoose.connect(process.env.MONGO_URI, {
     } else {
         console.log('Default admin user already exists:', adminEmail);
     }
-}).catch((err) => {
+  } catch (err) {
     console.error("MongoDB connection error:", err);
-});
+    // Don't crash the app, just log the error
+  }
+};
+
+// Only start the server if we're not in a serverless environment
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log("Server is running on port 3000");
+  });
+}
+
+// Connect to database
+connectDB();
+
+// Export for Vercel serverless
+module.exports = app;
