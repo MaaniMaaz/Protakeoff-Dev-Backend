@@ -37,7 +37,13 @@ router.post('/checkout', async (req, res) => {
         takeoffId: item.id,
         title: item.title,
         price: item.price,
-        blueprintUrl: takeoff && takeoff.files && takeoff.files[0]?.cloudinaryUrl ? takeoff.files[0].cloudinaryUrl : '',
+        files: takeoff && takeoff.files ? takeoff.files.map(file => ({
+          filename: file.filename,
+          originalName: file.originalName,
+          cloudinaryUrl: file.cloudinaryUrl,
+          size: file.size
+        })) : [],
+        blueprintUrl: takeoff && takeoff.files && takeoff.files[0]?.cloudinaryUrl ? takeoff.files[0].cloudinaryUrl : '', // Keep for backward compatibility
       };
     }));
     // Save order

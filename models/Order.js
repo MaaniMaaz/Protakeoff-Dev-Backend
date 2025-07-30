@@ -9,6 +9,14 @@ const orderSchema = new mongoose.Schema({
       title: String,
       price: Number,
       blueprintUrl: String,
+      files: [
+        {
+          filename: String,
+          originalName: String,
+          cloudinaryUrl: String,
+          size: Number
+        }
+      ]
     }
   ],
   paymentIntentId: { type: String },

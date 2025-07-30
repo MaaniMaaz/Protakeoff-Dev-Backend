@@ -48,6 +48,15 @@ exports.createTakeoff = async (req, res) => {
         });
         fs.unlinkSync(image.path);
       }
+    } else {
+      // Add default image if no images provided
+      images.push({
+        cloudinaryPublicId: 'default-takeoff-image',
+        cloudinaryUrl: 'https://res.cloudinary.com/demo/image/upload/v1/samples/landscape.jpg',
+        thumbnailUrl: 'https://res.cloudinary.com/demo/image/upload/v1/samples/landscape.jpg',
+        width: 800,
+        height: 600
+      });
     }
 
     // Parse features, specifications, tags if sent as JSON strings
