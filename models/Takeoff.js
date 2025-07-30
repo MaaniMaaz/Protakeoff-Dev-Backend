@@ -20,7 +20,7 @@ const imageSchema = new mongoose.Schema({
 
 const takeoffSchema = new mongoose.Schema({
   title: { type: String, required: true },
-  description: { type: String, required: true },
+  description: { type: String, required: false },
   projectType: { type: String, enum: ['landscaping', 'irrigation', 'bundle'] },
   projectSize: { type: String, enum: ['small', 'medium', 'large'] },
   zipCode: { type: String, required: true },
@@ -30,8 +30,8 @@ const takeoffSchema = new mongoose.Schema({
   specifications: {
     area: { type: Number, required: true },
     complexity: { type: String, enum: ['basic', 'intermediate', 'advanced'], required: true },
-    materials: { type: [String], required: true },
-    estimatedHours: { type: Number, required: true }
+    materials: { type: [String], required: false },
+    estimatedHours: { type: Number, required: false }
   },
   expirationDate: { type: Date, required: true },
   files: { type: [fileSchema], required: false, default: [] },
