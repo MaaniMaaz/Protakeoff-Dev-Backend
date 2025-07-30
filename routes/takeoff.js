@@ -18,7 +18,7 @@ const upload = multer({ storage });
 // Create Takeoff
 router.post('/', upload.fields([
   { name: 'files', maxCount: 10 },
-  { name: 'images', maxCount: 10 }
+  { name: 'pdfPreview', maxCount: 5 }
 ]), takeoffController.createTakeoff);
 
 // Get all Takeoffs
@@ -30,7 +30,7 @@ router.get('/:id', takeoffController.getTakeoffById);
 // Update Takeoff
 router.put('/:id', upload.fields([
   { name: 'files', maxCount: 10 },
-  { name: 'images', maxCount: 10 }
+  { name: 'pdfPreview', maxCount: 5 }
 ]), takeoffController.updateTakeoff);
 
 // Delete Takeoff

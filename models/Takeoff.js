@@ -7,15 +7,22 @@ const fileSchema = new mongoose.Schema({
   cloudinaryPublicId: String,
   cloudinaryUrl: String,
   resourceType: String, // 'raw' for files, 'image' for images
-  uploadDate: { type: Date, default: Date.now }
+  uploadDate: { type: Date, default: Date.now },
+  // New field for PDF first page preview
+  firstPagePreviewUrl: String,
+  isPdf: { type: Boolean, default: false }
 }, { _id: false });
 
-const imageSchema = new mongoose.Schema({
+const pdfPreviewSchema = new mongoose.Schema({
+  filename: String,
+  originalName: String,
+  size: Number,
   cloudinaryPublicId: String,
   cloudinaryUrl: String,
-  thumbnailUrl: String,
-  width: Number,
-  height: Number
+  resourceType: String,
+  uploadDate: { type: Date, default: Date.now },
+  firstPagePreviewUrl: String,
+  isPdf: { type: Boolean, default: true }
 }, { _id: false });
 
 const takeoffSchema = new mongoose.Schema({
@@ -35,7 +42,7 @@ const takeoffSchema = new mongoose.Schema({
   },
   expirationDate: { type: Date, required: true },
   files: { type: [fileSchema], required: false, default: [] },
-  images: { type: [imageSchema], required: false, default: [] },
+  pdfPreview: { type: [pdfPreviewSchema], required: false, default: [] },
   tags: { type: [String], required: true },
   isActive: { type: Boolean, default: true },
   downloadCount: { type: Number, default: 0 },
