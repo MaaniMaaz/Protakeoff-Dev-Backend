@@ -5,17 +5,25 @@ const fs = require('fs');
 const path = require('path');
 const { fromPath } = require('pdf2pic');
 
-// Ensure uploads directory exists
-const uploadsDir = path.join(__dirname, '..', 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
+// Check if we're in a serverless environment
+const isServerless = process.env.VERCEL || 
+                    process.env.NODE_ENV === 'production' || 
+                    process.env.VERCEL_ENV || 
+                    process.env.VERCEL_URL;
+
+// Ensure uploads directory exists (only for local development)
+if (!isServerless) {
+  const uploadsDir = path.join(__dirname, '..', 'uploads');
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
 }
 
 // Helper: upload file to Cloudinary
 async function uploadToCloudinary(filePath, resourceType = 'raw', folder = 'takeoffs') {
   try {
-    // Check if file exists before uploading
-    if (!fs.existsSync(filePath)) {
+    // Check if file exists before uploading (only for disk storage)
+    if (!isServerless && !fs.existsSync(filePath)) {
       throw new Error(`File not found: ${filePath}`);
     }
     return cloudinary.uploader.upload(filePath, {
@@ -28,11 +36,38 @@ async function uploadToCloudinary(filePath, resourceType = 'raw', folder = 'take
   }
 }
 
+// Helper: upload buffer to Cloudinary (for memory storage)
+async function uploadBufferToCloudinary(buffer, originalname, resourceType = 'raw', folder = 'takeoffs') {
+  try {
+    return new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        {
+          resource_type: resourceType,
+          folder,
+          public_id: `${Date.now()}-${originalname}`
+        },
+        (error, result) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve(result);
+          }
+        }
+      );
+      
+      stream.end(buffer);
+    });
+  } catch (error) {
+    console.error('Error uploading buffer to Cloudinary:', error);
+    throw error;
+  }
+}
+
 // Helper: generate PDF first page preview
 async function generatePdfPreview(pdfPath, outputPath) {
   try {
-    // Check if PDF file exists
-    if (!fs.existsSync(pdfPath)) {
+    // Check if PDF file exists (only for disk storage)
+    if (!isServerless && !fs.existsSync(pdfPath)) {
       console.error('PDF file not found:', pdfPath);
       return null;
     }
@@ -60,10 +95,23 @@ async function generatePdfPreview(pdfPath, outputPath) {
   }
 }
 
+// Helper: generate PDF preview from buffer (for memory storage)
+async function generatePdfPreviewFromBuffer(buffer, originalname) {
+  try {
+    // For serverless environments, we'll skip PDF preview generation
+    // as it requires file system access which is read-only
+    console.log('PDF preview generation skipped in serverless environment');
+    return null;
+  } catch (error) {
+    console.error('Error generating PDF preview from buffer:', error);
+    return null;
+  }
+}
+
 // Helper: safely delete file
 function safeDeleteFile(filePath) {
   try {
-    if (fs.existsSync(filePath)) {
+    if (!isServerless && fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
     }
   } catch (error) {
@@ -74,36 +122,59 @@ function safeDeleteFile(filePath) {
 // CREATE Takeoff
 exports.createTakeoff = async (req, res) => {
   try {
+    console.log('Environment:', isServerless ? 'Serverless' : 'Local Development');
+    console.log('Files received:', req.files ? Object.keys(req.files) : 'No files');
+    
     const { title, projectType, projectSize, zipCode, address, price, features, specifications, tags, isActive, expirationDate, createdBy } = req.body;
     let files = [];
     let pdfPreview = [];
 
     // Handle file uploads (pdf, doc, excel)
     if (req.files && req.files.files) {
+      console.log('Processing', req.files.files.length, 'files');
       for (const file of req.files.files) {
         try {
-          // Ensure file path is absolute
-          const filePath = path.isAbsolute(file.path) ? file.path : path.join(__dirname, '..', file.path);
+          console.log('Processing file:', file.originalname, 'Size:', file.size, 'Type:', file.mimetype);
           
-          const result = await uploadToCloudinary(filePath, 'raw');
-          
+          let result;
           let firstPagePreviewUrl = null;
           let isPdf = false;
           
-          // Check if file is PDF and generate first page preview
-          if (file.mimetype === 'application/pdf') {
-            isPdf = true;
-            const previewPath = await generatePdfPreview(filePath, filePath);
-            if (previewPath) {
-              const previewResult = await uploadToCloudinary(previewPath, 'image', 'pdf-previews');
-              firstPagePreviewUrl = previewResult.secure_url;
-              // Clean up preview file
-              safeDeleteFile(previewPath);
+          if (isServerless) {
+            // Handle memory storage (serverless environment)
+            console.log('Using memory storage for serverless environment');
+            result = await uploadBufferToCloudinary(file.buffer, file.originalname, 'raw');
+            
+            // Check if file is PDF
+            if (file.mimetype === 'application/pdf') {
+              isPdf = true;
+              // Skip PDF preview generation in serverless environment
+              console.log('PDF preview generation skipped for serverless environment');
             }
+          } else {
+            // Handle disk storage (local development)
+            console.log('Using disk storage for local development');
+            const filePath = path.isAbsolute(file.path) ? file.path : path.join(__dirname, '..', file.path);
+            result = await uploadToCloudinary(filePath, 'raw');
+            
+            // Check if file is PDF and generate first page preview
+            if (file.mimetype === 'application/pdf') {
+              isPdf = true;
+              const previewPath = await generatePdfPreview(filePath, filePath);
+              if (previewPath) {
+                const previewResult = await uploadToCloudinary(previewPath, 'image', 'pdf-previews');
+                firstPagePreviewUrl = previewResult.secure_url;
+                // Clean up preview file
+                safeDeleteFile(previewPath);
+              }
+            }
+            
+            // Clean up uploaded file
+            safeDeleteFile(filePath);
           }
           
           files.push({
-            filename: file.filename,
+            filename: file.filename || `${Date.now()}-${file.originalname}`,
             originalName: file.originalname,
             size: file.size,
             cloudinaryPublicId: result.public_id,
@@ -114,12 +185,9 @@ exports.createTakeoff = async (req, res) => {
             isPdf
           });
           
-          // Clean up uploaded file
-          safeDeleteFile(filePath);
+          console.log('Successfully processed file:', file.originalname);
         } catch (error) {
           console.error('Error processing file:', file.originalname, error);
-          // Clean up file even if processing failed
-          safeDeleteFile(file.path);
           throw error;
         }
       }
@@ -127,28 +195,43 @@ exports.createTakeoff = async (req, res) => {
 
     // Handle PDF preview uploads
     if (req.files && req.files.pdfPreview) {
+      console.log('Processing', req.files.pdfPreview.length, 'PDF previews');
       for (const pdf of req.files.pdfPreview) {
         try {
-          // Ensure file path is absolute
-          const filePath = path.isAbsolute(pdf.path) ? pdf.path : path.join(__dirname, '..', pdf.path);
+          console.log('Processing PDF preview:', pdf.originalname, 'Size:', pdf.size, 'Type:', pdf.mimetype);
           
-          const result = await uploadToCloudinary(filePath, 'raw');
-          
+          let result;
           let firstPagePreviewUrl = null;
           
-          // Generate first page preview for PDF
-          if (pdf.mimetype === 'application/pdf') {
-            const previewPath = await generatePdfPreview(filePath, filePath);
-            if (previewPath) {
-              const previewResult = await uploadToCloudinary(previewPath, 'image', 'pdf-previews');
-              firstPagePreviewUrl = previewResult.secure_url;
-              // Clean up preview file
-              safeDeleteFile(previewPath);
+          if (isServerless) {
+            // Handle memory storage (serverless environment)
+            console.log('Using memory storage for PDF preview in serverless environment');
+            result = await uploadBufferToCloudinary(pdf.buffer, pdf.originalname, 'raw');
+            // Skip PDF preview generation in serverless environment
+            console.log('PDF preview generation skipped for serverless environment');
+          } else {
+            // Handle disk storage (local development)
+            console.log('Using disk storage for PDF preview in local development');
+            const filePath = path.isAbsolute(pdf.path) ? pdf.path : path.join(__dirname, '..', pdf.path);
+            result = await uploadToCloudinary(filePath, 'raw');
+            
+            // Generate first page preview for PDF
+            if (pdf.mimetype === 'application/pdf') {
+              const previewPath = await generatePdfPreview(filePath, filePath);
+              if (previewPath) {
+                const previewResult = await uploadToCloudinary(previewPath, 'image', 'pdf-previews');
+                firstPagePreviewUrl = previewResult.secure_url;
+                // Clean up preview file
+                safeDeleteFile(previewPath);
+              }
             }
+            
+            // Clean up uploaded file
+            safeDeleteFile(filePath);
           }
           
           pdfPreview.push({
-            filename: pdf.filename,
+            filename: pdf.filename || `${Date.now()}-${pdf.originalname}`,
             originalName: pdf.originalname,
             size: pdf.size,
             cloudinaryPublicId: result.public_id,
@@ -159,12 +242,9 @@ exports.createTakeoff = async (req, res) => {
             isPdf: true
           });
           
-          // Clean up uploaded file
-          safeDeleteFile(filePath);
+          console.log('Successfully processed PDF preview:', pdf.originalname);
         } catch (error) {
           console.error('Error processing PDF preview:', pdf.originalname, error);
-          // Clean up file even if processing failed
-          safeDeleteFile(pdf.path);
           throw error;
         }
       }
@@ -288,28 +368,43 @@ exports.updateTakeoff = async (req, res) => {
     if (req.files && req.files.files) {
       for (const file of req.files.files) {
         try {
-          // Ensure file path is absolute
-          const filePath = path.isAbsolute(file.path) ? file.path : path.join(__dirname, '..', file.path);
-          
-          const result = await uploadToCloudinary(filePath, 'raw');
-          
+          let result;
           let firstPagePreviewUrl = null;
           let isPdf = false;
           
-          // Check if file is PDF and generate first page preview
-          if (file.mimetype === 'application/pdf') {
-            isPdf = true;
-            const previewPath = await generatePdfPreview(filePath, filePath);
-            if (previewPath) {
-              const previewResult = await uploadToCloudinary(previewPath, 'image', 'pdf-previews');
-              firstPagePreviewUrl = previewResult.secure_url;
-              // Clean up preview file
-              safeDeleteFile(previewPath);
+          if (isServerless) {
+            // Handle memory storage (serverless environment)
+            result = await uploadBufferToCloudinary(file.buffer, file.originalname, 'raw');
+            
+            // Check if file is PDF
+            if (file.mimetype === 'application/pdf') {
+              isPdf = true;
+              // Skip PDF preview generation in serverless environment
+              console.log('PDF preview generation skipped for serverless environment');
             }
+          } else {
+            // Handle disk storage (local development)
+            const filePath = path.isAbsolute(file.path) ? file.path : path.join(__dirname, '..', file.path);
+            result = await uploadToCloudinary(filePath, 'raw');
+            
+            // Check if file is PDF and generate first page preview
+            if (file.mimetype === 'application/pdf') {
+              isPdf = true;
+              const previewPath = await generatePdfPreview(filePath, filePath);
+              if (previewPath) {
+                const previewResult = await uploadToCloudinary(previewPath, 'image', 'pdf-previews');
+                firstPagePreviewUrl = previewResult.secure_url;
+                // Clean up preview file
+                safeDeleteFile(previewPath);
+              }
+            }
+            
+            // Clean up uploaded file
+            safeDeleteFile(filePath);
           }
           
           files.push({
-            filename: file.filename,
+            filename: file.filename || `${Date.now()}-${file.originalname}`,
             originalName: file.originalname,
             size: file.size,
             cloudinaryPublicId: result.public_id,
@@ -319,13 +414,8 @@ exports.updateTakeoff = async (req, res) => {
             firstPagePreviewUrl,
             isPdf
           });
-          
-          // Clean up uploaded file
-          safeDeleteFile(filePath);
         } catch (error) {
           console.error('Error processing file:', file.originalname, error);
-          // Clean up file even if processing failed
-          safeDeleteFile(file.path);
           throw error;
         }
       }
@@ -335,26 +425,36 @@ exports.updateTakeoff = async (req, res) => {
     if (req.files && req.files.pdfPreview) {
       for (const pdf of req.files.pdfPreview) {
         try {
-          // Ensure file path is absolute
-          const filePath = path.isAbsolute(pdf.path) ? pdf.path : path.join(__dirname, '..', pdf.path);
-          
-          const result = await uploadToCloudinary(filePath, 'raw');
-          
+          let result;
           let firstPagePreviewUrl = null;
           
-          // Generate first page preview for PDF
-          if (pdf.mimetype === 'application/pdf') {
-            const previewPath = await generatePdfPreview(filePath, filePath);
-            if (previewPath) {
-              const previewResult = await uploadToCloudinary(previewPath, 'image', 'pdf-previews');
-              firstPagePreviewUrl = previewResult.secure_url;
-              // Clean up preview file
-              safeDeleteFile(previewPath);
+          if (isServerless) {
+            // Handle memory storage (serverless environment)
+            result = await uploadBufferToCloudinary(pdf.buffer, pdf.originalname, 'raw');
+            // Skip PDF preview generation in serverless environment
+            console.log('PDF preview generation skipped for serverless environment');
+          } else {
+            // Handle disk storage (local development)
+            const filePath = path.isAbsolute(pdf.path) ? pdf.path : path.join(__dirname, '..', pdf.path);
+            result = await uploadToCloudinary(filePath, 'raw');
+            
+            // Generate first page preview for PDF
+            if (pdf.mimetype === 'application/pdf') {
+              const previewPath = await generatePdfPreview(filePath, filePath);
+              if (previewPath) {
+                const previewResult = await uploadToCloudinary(previewPath, 'image', 'pdf-previews');
+                firstPagePreviewUrl = previewResult.secure_url;
+                // Clean up preview file
+                safeDeleteFile(previewPath);
+              }
             }
+            
+            // Clean up uploaded file
+            safeDeleteFile(filePath);
           }
           
           pdfPreview.push({
-            filename: pdf.filename,
+            filename: pdf.filename || `${Date.now()}-${pdf.originalname}`,
             originalName: pdf.originalname,
             size: pdf.size,
             cloudinaryPublicId: result.public_id,
@@ -364,13 +464,8 @@ exports.updateTakeoff = async (req, res) => {
             firstPagePreviewUrl,
             isPdf: true
           });
-          
-          // Clean up uploaded file
-          safeDeleteFile(filePath);
         } catch (error) {
           console.error('Error processing PDF preview:', pdf.originalname, error);
-          // Clean up file even if processing failed
-          safeDeleteFile(pdf.path);
           throw error;
         }
       }

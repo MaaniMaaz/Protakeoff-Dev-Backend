@@ -5,25 +5,37 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// Ensure uploads directory exists
-const uploadsDir = path.join(__dirname, '..', 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
+// Check if we're in a serverless environment
+const isServerless = process.env.VERCEL || 
+                    process.env.NODE_ENV === 'production' || 
+                    process.env.VERCEL_ENV || 
+                    process.env.VERCEL_URL;
 
-// Multer config with error handling
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    // Ensure uploads directory exists before saving
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
-    }
-    cb(null, uploadsDir);
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + '-' + file.originalname);
+// Multer config with memory storage for serverless environments
+let storage;
+if (isServerless) {
+  // Use memory storage for serverless environments
+  storage = multer.memoryStorage();
+} else {
+  // Use disk storage for local development
+  const uploadsDir = path.join(__dirname, '..', 'uploads');
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
   }
-});
+  
+  storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+      // Ensure uploads directory exists before saving
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+      cb(null, uploadsDir);
+    },
+    filename: (req, file, cb) => {
+      cb(null, Date.now() + '-' + file.originalname);
+    }
+  });
+}
 
 const upload = multer({ 
   storage,

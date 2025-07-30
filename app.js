@@ -17,11 +17,19 @@ const PORT = process.env.PORT || 3000;
 
 dotenv.config();
 
-// Ensure uploads directory exists
-const uploadsDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-  console.log('Created uploads directory:', uploadsDir);
+// Check if we're in a serverless environment
+const isServerless = process.env.VERCEL || 
+                    process.env.NODE_ENV === 'production' || 
+                    process.env.VERCEL_ENV || 
+                    process.env.VERCEL_URL;
+
+// Ensure uploads directory exists (only for local development)
+if (!isServerless) {
+  const uploadsDir = path.join(__dirname, 'uploads');
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+    console.log('Created uploads directory:', uploadsDir);
+  }
 }
 
 app.use(express.json());
@@ -40,14 +48,17 @@ app.use(cors({
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 
-// Serve static files from uploads directory with error handling
-app.use('/uploads', (req, res, next) => {
-  // Check if uploads directory exists
-  if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
-  }
-  next();
-}, express.static(uploadsDir));
+// Serve static files from uploads directory with error handling (only for local development)
+if (!isServerless) {
+  app.use('/uploads', (req, res, next) => {
+    // Check if uploads directory exists
+    const uploadsDir = path.join(__dirname, 'uploads');
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+    next();
+  }, express.static(path.join(__dirname, 'uploads')));
+}
 
 app.use('/api/takeoffs', takeoffRoutes);
 app.use('/api/cart', cartRoutes);
