@@ -14,7 +14,7 @@ async function uploadToCloudinary(filePath, resourceType = 'raw', folder = 'take
 // CREATE Takeoff
 exports.createTakeoff = async (req, res) => {
   try {
-    const { title, description, projectType, projectSize, zipCode, address, price, features, specifications, tags, isActive, expirationDate, createdBy } = req.body;
+    const { title, projectType, projectSize, zipCode, address, price, features, specifications, tags, isActive, expirationDate, createdBy } = req.body;
     let files = [];
     let images = [];
 
@@ -74,7 +74,6 @@ exports.createTakeoff = async (req, res) => {
     }
     const takeoff = new Takeoff({
       title,
-      description,
       projectType,
       projectSize,
       zipCode,
