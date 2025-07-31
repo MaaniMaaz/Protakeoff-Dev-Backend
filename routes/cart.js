@@ -4,6 +4,7 @@ const Stripe = require('stripe');
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_BQokikJOvBiI2HlWgH4olfQ2'); // Set your Stripe test secret key in .env
 const Order = require('../models/Order');
 const Takeoff = require('../models/Takeoff');
+const { sendOrderConfirmationEmail } = require('../utils/email');
 
 // POST /api/cart/checkout
 router.post('/checkout', async (req, res) => {
@@ -56,6 +57,15 @@ router.post('/checkout', async (req, res) => {
       status: 'paid',
     });
     await order.save();
+    
+    // Send order confirmation email
+    try {
+      await sendOrderConfirmationEmail(order, user);
+    } catch (emailError) {
+      console.error('Failed to send order confirmation email:', emailError);
+      // Don't fail the order if email fails
+    }
+    
     return res.status(200).json({ success: true, message: 'Order placed successfully', order });
   } catch (err) {
     return res.status(500).json({ success: false, message: 'Checkout failed', error: err.message });

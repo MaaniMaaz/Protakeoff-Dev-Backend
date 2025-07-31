@@ -5,5 +5,6 @@ const orderController = require('../controllers/orderController');
 
 
 router.get('/transactions', orderController.getAllTransactions);
+router.post('/resend-email/:orderId', auth, orderController.resendOrderEmail);
 
 module.exports = router;
