@@ -61,16 +61,16 @@ async function sendOrderConfirmationEmail(order, user) {
     // Generate items HTML
     const itemsHtml = order.items.map(item => {
       const filesList = item.files && item.files.length > 0 
-        ? item.files.map(file => `<li><a href="${file.cloudinaryUrl}" target="_blank" style="color: #007bff; text-decoration: none;">${file.originalName}</a></li>`).join('')
-        : '<li>No files available</li>';
+        ? item.files.map(file => `<li><a href="${file.cloudinaryUrl}" target="_blank" class="file-link">${file.originalName}</a></li>`).join('')
+        : '<li style="color: #6b7280;">No files available</li>';
       
       return `
-        <div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px; margin-bottom: 16px; background-color: #f9f9f9;">
-          <h3 style="margin: 0 0 8px 0; color: #333; font-size: 18px;">${item.title}</h3>
-          <p style="margin: 4px 0; color: #666;">Price: $${item.price.toFixed(2)}</p>
+        <div class="item-card">
+          <h3 style="margin: 0 0 8px 0; color: #111827; font-size: 18px; font-weight: bold;">${item.title}</h3>
+          <p style="margin: 4px 0; color: #6b7280; font-size: 14px;">Price: $${item.price.toFixed(2)}</p>
           <div style="margin-top: 12px;">
-            <h4 style="margin: 0 0 8px 0; color: #333; font-size: 14px;">Download Files:</h4>
-            <ul style="margin: 0; padding-left: 20px; color: #666;">
+            <h4 style="margin: 0 0 8px 0; color: #111827; font-size: 14px; font-weight: bold;">Download Files:</h4>
+            <ul style="margin: 0; padding-left: 20px; color: #6b7280; font-size: 14px;">
               ${filesList}
             </ul>
           </div>
@@ -86,36 +86,40 @@ async function sendOrderConfirmationEmail(order, user) {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Order Confirmation - ProTakeoff</title>
         <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          body { font-family: "Urbanist", Arial, sans-serif; line-height: 1.6; color: #374151; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background-color: #007bff; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
-          .content { background-color: white; padding: 20px; border: 1px solid #e0e0e0; }
-          .footer { background-color: #f8f9fa; padding: 20px; text-align: center; border-radius: 0 0 8px 8px; border: 1px solid #e0e0e0; }
-          .order-summary { background-color: #f8f9fa; padding: 16px; border-radius: 8px; margin: 20px 0; }
-          .total { font-size: 18px; font-weight: bold; color: #007bff; }
-          .download-section { background-color: #e7f3ff; padding: 16px; border-radius: 8px; margin: 20px 0; }
+          .header { background-color: #059669; color: white; padding: 24px; text-align: center; border-radius: 12px 12px 0 0; }
+          .content { background-color: white; padding: 24px; border: 1px solid #e5e7eb; }
+          .footer { background-color: #f9fafb; padding: 20px; text-align: center; border-radius: 0 0 12px 12px; border: 1px solid #e5e7eb; }
+          .order-summary { background-color: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #e5e7eb; }
+          .total { font-size: 18px; font-weight: bold; color: #059669; }
+          .download-section { background-color: #dcfce7; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #bbf7d0; }
+          .status-paid { color: #059669; font-weight: bold; }
+          .item-card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin-bottom: 16px; background-color: #ffffff; }
+          .file-link { color: #059669; text-decoration: none; }
+          .file-link:hover { text-decoration: underline; }
         </style>
       </head>
       <body>
         <div class="container">
           <div class="header">
-            <h1 style="margin: 0;">Order Confirmation</h1>
-            <p style="margin: 10px 0 0 0;">Thank you for your purchase!</p>
+            <h1 style="margin: 0; font-size: 28px; font-weight: bold;">Order Confirmation</h1>
+            <p style="margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">Thank you for your purchase!</p>
           </div>
           
           <div class="content">
-            <p>Dear ${user.firstName} ${user.lastName},</p>
+            <p style="font-size: 16px; margin-bottom: 20px;">Dear ${user.firstName} ${user.lastName},</p>
             
-            <p>Your order has been successfully processed. Here are the details:</p>
+            <p style="font-size: 16px; margin-bottom: 20px;">Your order has been successfully processed. Here are the details:</p>
             
             <div class="order-summary">
-              <h2 style="margin: 0 0 16px 0; color: #333;">Order Details</h2>
-              <p><strong>Order ID:</strong> ${order._id}</p>
-              <p><strong>Order Date:</strong> ${orderDate}</p>
-              <p><strong>Status:</strong> <span style="color: #28a745; font-weight: bold;">Paid</span></p>
+              <h2 style="margin: 0 0 16px 0; color: #111827; font-size: 20px; font-weight: bold;">Order Details</h2>
+              <p style="margin: 8px 0; font-size: 14px;"><strong>Order ID:</strong> ${order._id}</p>
+              <p style="margin: 8px 0; font-size: 14px;"><strong>Order Date:</strong> ${orderDate}</p>
+              <p style="margin: 8px 0; font-size: 14px;"><strong>Status:</strong> <span class="status-paid">Paid</span></p>
             </div>
             
-            <h2 style="color: #333; margin: 24px 0 16px 0;">Items Purchased</h2>
+            <h2 style="color: #111827; margin: 24px 0 16px 0; font-size: 20px; font-weight: bold;">Items Purchased</h2>
             ${itemsHtml}
             
             <div class="order-summary">
@@ -123,17 +127,17 @@ async function sendOrderConfirmationEmail(order, user) {
             </div>
             
             <div class="download-section">
-              <h3 style="margin: 0 0 12px 0; color: #333;">Download Your Files</h3>
-              <p style="margin: 0; color: #666;">Click on the file links above to download your purchased takeoff files. The links will remain active for your convenience.</p>
+              <h3 style="margin: 0 0 12px 0; color: #111827; font-size: 18px; font-weight: bold;">Download Your Files</h3>
+              <p style="margin: 0; color: #6b7280; font-size: 14px;">Click on the file links above to download your purchased takeoff files. The links will remain active for your convenience.</p>
             </div>
             
-            <p>If you have any questions about your order, please don't hesitate to contact our support team.</p>
+            <p style="font-size: 16px; margin-top: 20px;">If you have any questions about your order, please don't hesitate to contact our support team.</p>
             
-            <p>Thank you for choosing ProTakeoff!</p>
+            <p style="font-size: 16px; margin-top: 20px;">Thank you for choosing ProTakeoff!</p>
           </div>
           
           <div class="footer">
-            <p style="margin: 0; color: #666; font-size: 14px;">
+            <p style="margin: 0; color: #6b7280; font-size: 14px;">
               © 2024 ProTakeoff. All rights reserved.<br>
               This is an automated email, please do not reply directly to this message.
             </p>
