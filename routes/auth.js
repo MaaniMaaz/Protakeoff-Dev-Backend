@@ -22,6 +22,18 @@ router.post('/login', [
   body('password').notEmpty(),
 ], authController.login);
 
+// Forgot Password
+router.post('/forgot-password', [
+  body('email').isEmail().withMessage('Valid email required'),
+], authController.forgotPassword);
+
+// Reset Password
+router.post('/reset-password', [
+  body('token').notEmpty().withMessage('Reset token is required'),
+  body('email').isEmail().withMessage('Valid email required'),
+  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+], authController.resetPassword);
+
 // Admin Login
 router.post('/admin-login', [
   body('email').isEmail().withMessage('Valid email required'),
