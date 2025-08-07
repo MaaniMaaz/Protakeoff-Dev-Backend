@@ -290,9 +290,10 @@ exports.createTakeoff = async (req, res) => {
   }
 };
 
-// GET all Takeoffs with filtering, sorting, and pagination
+// GET all Takeoffs with filtering, sorting, and pagination (for users - excludes expired)
 exports.getAllTakeoffs = async (req, res) => {
   try {
+    console.log('Received query params:', req.query)
     const {
       zipCode,
       size,
@@ -306,8 +307,15 @@ exports.getAllTakeoffs = async (req, res) => {
     } = req.query;
 
     const filter = {};
+    // Only show active takeoffs to users that haven't expired
+    filter.isActive = true;
+    // Filter out expired takeoffs
+    filter.expirationDate = { $gt: new Date() };
     if (zipCode) filter.zipCode = zipCode;
-    if (size) filter.projectSize = size.toLowerCase();
+    if (size) {
+      filter.projectSize = size.toLowerCase();
+      console.log('Size filter applied:', filter.projectSize)
+    }
     if (type) {
       // type can be comma separated
       const types = type.split(',').map(t => t.trim().toLowerCase());
@@ -335,11 +343,76 @@ exports.getAllTakeoffs = async (req, res) => {
 
     // Pagination
     const skip = (Number(page) - 1) * Number(limit);
+    console.log('Final filter:', JSON.stringify(filter, null, 2))
     const takeoffs = await Takeoff.find(filter)
       .sort(sortOption)
       .skip(skip)
       .limit(Number(limit))
       .populate('createdBy', 'email firstName lastName');
+    console.log('Found takeoffs:', takeoffs.length)
+    res.json(takeoffs);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// GET all Takeoffs for admin (includes expired takeoffs)
+exports.getAllTakeoffsAdmin = async (req, res) => {
+  try {
+    console.log('Received admin query params:', req.query)
+    const {
+      zipCode,
+      size,
+      type,
+      priceMin,
+      priceMax,
+      search,
+      sort,
+      page = 1,
+      limit = 9
+    } = req.query;
+
+    const filter = {};
+    // Admin can see all takeoffs (including expired ones)
+    if (zipCode) filter.zipCode = zipCode;
+    if (size) {
+      filter.projectSize = size.toLowerCase();
+      console.log('Size filter applied:', filter.projectSize)
+    }
+    if (type) {
+      // type can be comma separated
+      const types = type.split(',').map(t => t.trim().toLowerCase());
+      filter.projectType = { $in: types };
+    }
+    if (priceMin || priceMax) {
+      filter.price = {};
+      if (priceMin) filter.price.$gte = Number(priceMin);
+      if (priceMax) filter.price.$lte = Number(priceMax);
+    }
+    if (search) {
+      filter.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
+        { zipCode: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    // Sorting
+    let sortOption = { createdAt: -1 };
+    if (sort === 'price_asc') sortOption = { price: 1 };
+    else if (sort === 'price_desc') sortOption = { price: -1 };
+    else if (sort === 'size') sortOption = { projectSize: 1 };
+    else if (sort === 'newest') sortOption = { createdAt: -1 };
+
+    // Pagination
+    const skip = (Number(page) - 1) * Number(limit);
+    console.log('Final admin filter:', JSON.stringify(filter, null, 2))
+    const takeoffs = await Takeoff.find(filter)
+      .sort(sortOption)
+      .skip(skip)
+      .limit(Number(limit))
+      .populate('createdBy', 'email firstName lastName');
+    console.log('Found takeoffs for admin:', takeoffs.length)
     res.json(takeoffs);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -351,6 +424,14 @@ exports.getTakeoffById = async (req, res) => {
   try {
     const takeoff = await Takeoff.findById(req.params.id).populate('createdBy', 'email firstName lastName');
     if (!takeoff) return res.status(404).json({ error: 'Takeoff not found' });
+    
+    // Check if user is admin (you can implement your own admin check logic here)
+    // For now, we'll allow access to all takeoffs, but you can add admin check later
+    // const isAdmin = req.user && req.user.role === 'admin';
+    // if (!isAdmin && !takeoff.isActive) {
+    //   return res.status(404).json({ error: 'Takeoff not found' });
+    // }
+    
     res.json(takeoff);
   } catch (err) {
     res.status(500).json({ error: err.message });

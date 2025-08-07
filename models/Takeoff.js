@@ -29,7 +29,7 @@ const takeoffSchema = new mongoose.Schema({
   title: { type: String, required: true },
   description: { type: String, required: false },
   projectType: { type: String, enum: ['landscaping', 'irrigation', 'bundle'] },
-  projectSize: { type: String, enum: ['small', 'medium', 'large'] },
+  projectSize: { type: String, enum: ['small', 'medium', 'large', 'corporate'] },
   zipCode: { type: String, required: true },
   address: { type: String, required: true },
   price: { type: Number, required: true },

@@ -87,6 +87,9 @@ router.post('/', upload.fields([
 // Get all Takeoffs
 router.get('/', takeoffController.getAllTakeoffs);
 
+// Get all Takeoffs for admin (includes expired)
+router.get('/admin/all', takeoffController.getAllTakeoffsAdmin);
+
 // Get single Takeoff
 router.get('/:id', takeoffController.getTakeoffById);
 
