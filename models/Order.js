@@ -21,6 +21,15 @@ const orderSchema = new mongoose.Schema({
   ],
   paymentIntentId: { type: String },
   amount: { type: Number },
+  originalAmount: { type: Number }, // Amount before discount
+  discountAmount: { type: Number, default: 0 }, // Discount amount
+  promoCode: {
+    id: String,
+    code: String,
+    description: String,
+    discountType: String,
+    discountValue: Number
+  },
   status: { type: String, default: 'pending' },
   createdAt: { type: Date, default: Date.now },
 });

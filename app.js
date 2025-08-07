@@ -10,6 +10,7 @@ const takeoffRoutes = require('./routes/takeoff');
 const cartRoutes = require('./routes/cart');
 const orderRoutes = require('./routes/order');
 const contactRoutes = require('./routes/contact');
+const promoCodeRoutes = require('./routes/promoCode');
 
 const app = express();
 
@@ -64,6 +65,7 @@ app.use('/api/takeoffs', takeoffRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/contact', contactRoutes);
+app.use('/api/promocodes', promoCodeRoutes);
 
 app.get("/", (req, res) => {
     res.send("Hello World");

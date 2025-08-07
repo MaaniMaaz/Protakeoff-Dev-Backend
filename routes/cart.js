@@ -4,20 +4,51 @@ const Stripe = require('stripe');
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_BQokikJOvBiI2HlWgH4olfQ2'); // Set your Stripe test secret key in .env
 const Order = require('../models/Order');
 const Takeoff = require('../models/Takeoff');
+const PromoCode = require('../models/PromoCode');
 const { sendOrderConfirmationEmail } = require('../utils/email');
 
 // POST /api/cart/checkout
 router.post('/checkout', async (req, res) => {
   try {
-    const { cart, user, paymentMethodId } = req.body;
+    const { cart, user, paymentMethodId, promoCodeId } = req.body;
     if (!cart || !user || !paymentMethodId) {
       return res.status(400).json({ success: false, message: 'Missing cart, user, or payment info' });
     }
-    // Calculate total
-    const amount = cart.reduce((sum, item) => sum + item.price * (item.quantity || 1), 0);
-    // Create Stripe PaymentIntent
+    
+    // Calculate original total
+    const originalAmount = cart.reduce((sum, item) => sum + item.price * (item.quantity || 1), 0);
+    
+    // Apply promo code if provided
+    let finalAmount = originalAmount;
+    let discountAmount = 0;
+    let promoCodeData = null;
+    
+    if (promoCodeId) {
+      const promoCode = await PromoCode.findById(promoCodeId);
+      if (promoCode && promoCode.isValid) {
+        const validation = promoCode.validatePromoCode(originalAmount);
+        if (validation.valid) {
+          discountAmount = promoCode.calculateDiscount(originalAmount);
+          finalAmount = originalAmount - discountAmount;
+          promoCodeData = {
+            id: promoCode._id,
+            code: promoCode.code,
+            description: promoCode.description,
+            discountType: promoCode.discountType,
+            discountValue: promoCode.discountValue
+          };
+          
+          // Increment usage count
+          await PromoCode.findByIdAndUpdate(promoCodeId, {
+            $inc: { currentUsage: 1 }
+          });
+        }
+      }
+    }
+    
+    // Create Stripe PaymentIntent with final amount
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(amount * 100), // cents
+      amount: Math.round(finalAmount * 100), // cents
       currency: 'usd',
       payment_method: paymentMethodId,
       payment_method_types: ['card'],
@@ -26,6 +57,7 @@ router.post('/checkout', async (req, res) => {
     if (paymentIntent.status !== 'succeeded') {
       return res.status(402).json({ success: false, message: 'Payment not successful' });
     }
+    
     // Prepare order items with blueprint links
     const items = await Promise.all(cart.map(async (item) => {
       const takeoff = await Takeoff.findById(item.id);
@@ -47,13 +79,17 @@ router.post('/checkout', async (req, res) => {
         blueprintUrl: takeoff && takeoff.files && takeoff.files[0]?.cloudinaryUrl ? takeoff.files[0].cloudinaryUrl : '', // Keep for backward compatibility
       };
     }));
-    // Save order
+    
+    // Save order with promo code information
     const order = new Order({
       userEmail: user.email,
       userName: `${user.firstName} ${user.lastName}`,
       items,
       paymentIntentId: paymentIntent.id,
-      amount,
+      amount: finalAmount,
+      originalAmount,
+      discountAmount,
+      promoCode: promoCodeData,
       status: 'paid',
     });
     await order.save();
