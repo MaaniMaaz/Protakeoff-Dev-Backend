@@ -88,15 +88,15 @@ async function sendOrderConfirmationEmail(order, user) {
         <style>
           body { font-family: "Urbanist", Arial, sans-serif; line-height: 1.6; color: #374151; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background-color: #059669; color: white; padding: 24px; text-align: center; border-radius: 12px 12px 0 0; }
+          .header { background-color: #16A34A; color: white; padding: 24px; text-align: center; border-radius: 12px 12px 0 0; }
           .content { background-color: white; padding: 24px; border: 1px solid #e5e7eb; }
           .footer { background-color: #f9fafb; padding: 20px; text-align: center; border-radius: 0 0 12px 12px; border: 1px solid #e5e7eb; }
           .order-summary { background-color: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #e5e7eb; }
-          .total { font-size: 18px; font-weight: bold; color: #059669; }
+          .total { font-size: 18px; font-weight: bold; color: #16A34A; }
           .download-section { background-color: #dcfce7; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #bbf7d0; }
-          .status-paid { color: #059669; font-weight: bold; }
+          .status-paid { color: #16A34A; font-weight: bold; }
           .item-card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin-bottom: 16px; background-color: #ffffff; }
-          .file-link { color: #059669; text-decoration: none; }
+          .file-link { color: #16A34A; text-decoration: none; }
           .file-link:hover { text-decoration: underline; }
         </style>
       </head>
@@ -128,7 +128,7 @@ async function sendOrderConfirmationEmail(order, user) {
             
             <div class="download-section">
               <h3 style="margin: 0 0 12px 0; color: #111827; font-size: 18px; font-weight: bold;">Download Your Files</h3>
-              <p style="margin: 0; color: #6b7280; font-size: 14px;">Click on the file links above to download your purchased takeoff files. The links will remain active for your convenience.</p>
+              <p style="margin: 0; color: #6b7280; font-size: 14px;">Click on the links below to download your takeoff files. The links will remain active for your convenience.</p>
             </div>
             
             <p style="font-size: 16px; margin-top: 20px;">If you have any questions about your order, please don't hesitate to contact our support team.</p>
