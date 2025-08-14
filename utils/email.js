@@ -84,7 +84,7 @@ async function sendOrderConfirmationEmail(order, user) {
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Order Confirmation - ProTakeoff</title>
+        <title>Order Confirmation - ProTakeoffs.ai</title>
         <style>
           body { font-family: "Urbanist", Arial, sans-serif; line-height: 1.6; color: #374151; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
@@ -133,12 +133,12 @@ async function sendOrderConfirmationEmail(order, user) {
             
             <p style="font-size: 16px; margin-top: 20px;">If you have any questions about your order, please don't hesitate to contact our support team.</p>
             
-            <p style="font-size: 16px; margin-top: 20px;">Thank you for choosing ProTakeoff!</p>
+            <p style="font-size: 16px; margin-top: 20px;">Thank you for choosing ProTakeoffs.ai!</p>
           </div>
           
           <div class="footer">
             <p style="margin: 0; color: #6b7280; font-size: 14px;">
-              © 2024 ProTakeoff. All rights reserved.<br>
+              © 2024 ProTakeoffs.ai. All rights reserved.<br>
               This is an automated email, please do not reply directly to this message.
             </p>
           </div>
@@ -148,7 +148,7 @@ async function sendOrderConfirmationEmail(order, user) {
     `;
 
     const text = `
-Order Confirmation - ProTakeoff
+Order Confirmation - ProTakeoffs.ai
 
 Dear ${user.firstName} ${user.lastName},
 
@@ -174,9 +174,9 @@ ${order.items.map(item =>
 
 If you have any questions about your order, please don't hesitate to contact our support team.
 
-Thank you for choosing ProTakeoff!
+Thank you for choosing ProTakeoffs.ai!
 
-© 2024 ProTakeoff. All rights reserved.
+© 2024 ProTakeoffs.ai. All rights reserved.
     `;
 
     await sendEmail({
