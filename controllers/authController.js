@@ -132,15 +132,29 @@ exports.forgotPassword = async (req, res) => {
     // Send reset email
     await sendEmail({
       to: email,
-      subject: 'Password Reset Request',
+      subject: 'ProTakeoffs.ai - Password Reset Request',
       html: `
-        <p>Hello ${user.firstName},</p>
-        <p>You requested a password reset for your ProTakeoff.ai account.</p>
-        <p>Click the link below to reset your password:</p>
-        <p><a href="${resetUrl}">Reset Password</a></p>
-        <p>This link will expire in 10 minutes.</p>
-        <p>If you didn't request this, please ignore this email.</p>
-        <p>Best regards,<br>The ProTakeoff.ai Team</p>
+                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+           <div style="text-align: center; margin-bottom: 30px;">
+             <span style="font-size: 24px; font-weight: bold; color: #16A34A; letter-spacing: 0.05em;">
+               ProTakeoffs.<span style="color: #111827;">AI</span>
+             </span>
+           </div>
+           
+           <p>Hello ${user.firstName},</p>
+           
+           <p>We received a request to reset your password. If you made this request, please click on the link below to create a new password:</p>
+           
+           <div style="text-align: center; margin: 30px 0;">
+             <a href="${resetUrl}" style="background-color: #16A34A; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">Reset Password</a>
+           </div>
+          
+          <p>For your security, this link will expire in 10 minutes. If you did not request a password reset, you can safely ignore this email — your account will remain secure.</p>
+          
+          <p>Please do not reply to this email, as it is sent from an unmonitored address. If you need assistance, contact us at <a href="mailto:hello@protakeoffs.ai">hello@protakeoffs.ai</a>.</p>
+          
+          <p>Thanks,<br>The ProTakeoffs.ai Team</p>
+        </div>
       `
     });
 
