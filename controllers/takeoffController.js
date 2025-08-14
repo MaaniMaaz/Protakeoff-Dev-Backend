@@ -173,7 +173,7 @@ exports.createTakeoff = async (req, res) => {
             safeDeleteFile(filePath);
           }
           
-          files.push({
+          const fileObject = {
             filename: file.filename || `${Date.now()}-${file.originalname}`,
             originalName: file.originalname,
             size: file.size,
@@ -183,7 +183,14 @@ exports.createTakeoff = async (req, res) => {
             uploadDate: new Date(),
             firstPagePreviewUrl,
             isPdf
-          });
+          };
+          
+          files.push(fileObject);
+          
+          // If it's a PDF, also add it to pdfPreview array
+          if (isPdf) {
+            pdfPreview.push(fileObject);
+          }
           
           console.log('Successfully processed file:', file.originalname);
         } catch (error) {
@@ -230,7 +237,7 @@ exports.createTakeoff = async (req, res) => {
             safeDeleteFile(filePath);
           }
           
-          pdfPreview.push({
+          const pdfObject = {
             filename: pdf.filename || `${Date.now()}-${pdf.originalname}`,
             originalName: pdf.originalname,
             size: pdf.size,
@@ -240,7 +247,12 @@ exports.createTakeoff = async (req, res) => {
             uploadDate: new Date(),
             firstPagePreviewUrl,
             isPdf: true
-          });
+          };
+          
+          pdfPreview.push(pdfObject);
+          
+          // Also add PDF to files array
+          files.push(pdfObject);
           
           console.log('Successfully processed PDF preview:', pdf.originalname);
         } catch (error) {
@@ -484,7 +496,7 @@ exports.updateTakeoff = async (req, res) => {
             safeDeleteFile(filePath);
           }
           
-          files.push({
+          const fileObject = {
             filename: file.filename || `${Date.now()}-${file.originalname}`,
             originalName: file.originalname,
             size: file.size,
@@ -494,7 +506,14 @@ exports.updateTakeoff = async (req, res) => {
             uploadDate: new Date(),
             firstPagePreviewUrl,
             isPdf
-          });
+          };
+          
+          files.push(fileObject);
+          
+          // If it's a PDF, also add it to pdfPreview array
+          if (isPdf) {
+            pdfPreview.push(fileObject);
+          }
         } catch (error) {
           console.error('Error processing file:', file.originalname, error);
           throw error;
@@ -534,7 +553,7 @@ exports.updateTakeoff = async (req, res) => {
             safeDeleteFile(filePath);
           }
           
-          pdfPreview.push({
+          const pdfObject = {
             filename: pdf.filename || `${Date.now()}-${pdf.originalname}`,
             originalName: pdf.originalname,
             size: pdf.size,
@@ -544,7 +563,12 @@ exports.updateTakeoff = async (req, res) => {
             uploadDate: new Date(),
             firstPagePreviewUrl,
             isPdf: true
-          });
+          };
+          
+          pdfPreview.push(pdfObject);
+          
+          // Also add PDF to files array
+          files.push(pdfObject);
         } catch (error) {
           console.error('Error processing PDF preview:', pdf.originalname, error);
           throw error;
