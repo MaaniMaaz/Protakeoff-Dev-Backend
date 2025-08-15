@@ -163,10 +163,10 @@ async function sendOrderConfirmationEmail(order, user) {
             </div>
             
             <h2 style="color: #111827; margin: 24px 0 16px 0; font-size: 20px; font-weight: bold;">Items Purchased</h2>
-            ${itemsHtml}
-            
             <p style="font-size: 16px; margin-bottom: 20px;">Click on the links below to download your takeoff files. 
 The links will remain active for your convenience.</p>
+            ${itemsHtml}
+            
 
             <div class="order-summary">
               <p class="total">Total Amount: $${order.amount.toFixed(2)}</p>
