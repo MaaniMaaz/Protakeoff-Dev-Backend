@@ -1,13 +1,13 @@
-const nodemailer = require('nodemailer');
-const dotenv = require('dotenv')
+const nodemailer = require("nodemailer");
+const dotenv = require("dotenv");
 
 dotenv.config();
 
-console.log('EMAIL_USER:', process.env.EMAIL_USER);
-console.log('EMAIL_PASSWORD:', process.env.EMAIL_PASSWORD ? '***' : undefined);
+console.log("EMAIL_USER:", process.env.EMAIL_USER);
+console.log("EMAIL_PASSWORD:", process.env.EMAIL_PASSWORD ? "***" : undefined);
 // Use Gmail SMTP with host/port/secure/tls for best compatibility
 const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
+  host: "smtp.gmail.com",
   port: 587,
   secure: false, // TLS
   auth: {
@@ -16,18 +16,21 @@ const transporter = nodemailer.createTransport({
   },
   tls: {
     rejectUnauthorized: true,
-    ciphers: 'SSLv3',
+    ciphers: "SSLv3",
   },
   debug: false,
   logger: false,
 });
 
 // Optionally verify connection on startup
-transporter.verify().then(() => {
-  console.log('Nodemailer: Email server is ready');
-}).catch((err) => {
-  console.error('Nodemailer: Email server connection error:', err);
-});
+transporter
+  .verify()
+  .then(() => {
+    console.log("Nodemailer: Email server is ready");
+  })
+  .catch((err) => {
+    console.error("Nodemailer: Email server connection error:", err);
+  });
 
 async function sendEmail({ to, subject, html, text, replyTo }) {
   const mailOptions = {
@@ -38,10 +41,10 @@ async function sendEmail({ to, subject, html, text, replyTo }) {
     text,
     replyTo,
     headers: {
-      'X-Priority': '1',
-      'X-MSMail-Priority': 'High',
-      'Importance': 'High',
-      'X-Contact-Form': 'ProTakeoff Backend',
+      "X-Priority": "1",
+      "X-MSMail-Priority": "High",
+      Importance: "High",
+      "X-Contact-Form": "ProTakeoff Backend",
     },
   };
   return transporter.sendMail(mailOptions);
@@ -50,24 +53,59 @@ async function sendEmail({ to, subject, html, text, replyTo }) {
 // Function to send order confirmation email
 async function sendOrderConfirmationEmail(order, user) {
   try {
-    const orderDate = new Date(order.createdAt).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    const orderDate = new Date(order.createdAt).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
 
     // Generate items HTML
-    const itemsHtml = order.items.map(item => {
-      const filesList = item.files && item.files.length > 0 
-        ? item.files.map(file => `<li><a href="${file.cloudinaryUrl}" target="_blank" class="file-link">${file.originalName}</a></li>`).join('')
-        : '<li style="color: #6b7280;">No files available</li>';
-      
-      return `
+    const itemsHtml = order.items
+      .map((item) => {
+        // Debug logging to see what's in the item
+        console.log('Processing item for email:', JSON.stringify(item, null, 2));
+        
+        const filesList =
+          item.files && item.files.length > 0
+            ? item.files
+                .map(
+                  (file) =>
+                    `<li><a href="${file.cloudinaryUrl}" target="_blank" class="file-link">${file.originalName}</a></li>`
+                )
+                .join("")
+            : '<li style="color: #6b7280;">No files available</li>';
+
+        // Check if generalContractor exists and has data
+        const hasGeneralContractor = item.generalContractor && 
+          item.generalContractor.email && 
+          item.generalContractor.phone;
+
+        return `
         <div class="item-card">
-          <h3 style="margin: 0 0 8px 0; color: #111827; font-size: 18px; font-weight: bold;">${item.title}</h3>
-          <p style="margin: 4px 0; color: #6b7280; font-size: 14px;">Price: $${item.price.toFixed(2)}</p>
+          <h3 style="margin: 0 0 8px 0; color: #111827; font-size: 18px; font-weight: bold;">${
+            item.title
+          }</h3>
+          <p style="margin: 4px 0; color: #6b7280; font-size: 14px;">Price: $${item.price.toFixed(
+            2
+          )}</p>
+          ${hasGeneralContractor ? `
+          <div style="margin: 8px 0; font-size: 14px; line-height: 1.5; color: #000000;">
+            <div style="font-weight: bold; font-size: 15px; margin-bottom: 4px;">
+              General Contractor Information
+            </div>
+            <div style="margin-left: 8px;">
+              <div>
+                <span style="font-weight: 600;">Email:</span> ${item.generalContractor.email}
+              </div>
+              <div>
+                <span style="font-weight: 600;">Phone:</span> ${item.generalContractor.phone}
+              </div>
+            </div>
+          </div>
+          ` : ''}
+
           <div style="margin-top: 12px;">
             <h4 style="margin: 0 0 8px 0; color: #111827; font-size: 14px; font-weight: bold;">Download Files:</h4>
             <ul style="margin: 0; padding-left: 20px; color: #6b7280; font-size: 14px;">
@@ -76,7 +114,8 @@ async function sendOrderConfirmationEmail(order, user) {
           </div>
         </div>
       `;
-    }).join('');
+      })
+      .join("");
 
     const html = `
       <!DOCTYPE html>
@@ -108,13 +147,17 @@ async function sendOrderConfirmationEmail(order, user) {
           </div>
           
           <div class="content">
-            <p style="font-size: 16px; margin-bottom: 20px;">Dear ${user.firstName} ${user.lastName},</p>
+            <p style="font-size: 16px; margin-bottom: 20px;">Dear ${
+              user.firstName
+            } ${user.lastName},</p>
             
             <p style="font-size: 16px; margin-bottom: 20px;">Your order has been successfully processed. Here are the details:</p>
             
             <div class="order-summary">
               <h2 style="margin: 0 0 16px 0; color: #111827; font-size: 20px; font-weight: bold;">Order Details</h2>
-              <p style="margin: 8px 0; font-size: 14px;"><strong>Order ID:</strong> ${order._id}</p>
+              <p style="margin: 8px 0; font-size: 14px;"><strong>Order ID:</strong> ${
+                order._id
+              }</p>
               <p style="margin: 8px 0; font-size: 14px;"><strong>Order Date:</strong> ${orderDate}</p>
               <p style="margin: 8px 0; font-size: 14px;"><strong>Status:</strong> <span class="status-paid">Paid</span></p>
             </div>
@@ -159,18 +202,32 @@ Order Date: ${orderDate}
 Status: Paid
 
 Items Purchased:
-${order.items.map(item => `
+${order.items
+  .map(
+    (item) => `
 - ${item.title}
   Price: $${item.price.toFixed(2)}
-  Files: ${item.files ? item.files.map(f => f.originalName).join(', ') : 'No files available'}
-`).join('')}
+  Files: ${
+    item.files
+      ? item.files.map((f) => f.originalName).join(", ")
+      : "No files available"
+  }
+`
+  )
+  .join("")}
 
 Total Amount: $${order.amount.toFixed(2)}
 
 Download Your Files:
-${order.items.map(item => 
-  item.files ? item.files.map(f => `- ${f.originalName}: ${f.cloudinaryUrl}`).join('\n') : '- No files available'
-).join('\n')}
+${order.items
+  .map((item) =>
+    item.files
+      ? item.files
+          .map((f) => `- ${f.originalName}: ${f.cloudinaryUrl}`)
+          .join("\n")
+      : "- No files available"
+  )
+  .join("\n")}
 
 If you have any questions about your order, please don't hesitate to contact our support team.
 
@@ -181,17 +238,17 @@ Thank you for choosing ProTakeoffs.ai!
 
     await sendEmail({
       to: user.email,
-      subject: `Order Confirmation - Order #${order._id}`,
+      subject: `🚀 Let’s Takeoff! Order Confirmation #${order._id}`,
       html,
-      text
+      text,
     });
 
     console.log(`Order confirmation email sent to ${user.email}`);
     return true;
   } catch (error) {
-    console.error('Error sending order confirmation email:', error);
+    console.error("Error sending order confirmation email:", error);
     return false;
   }
 }
 
-module.exports = { sendEmail, sendOrderConfirmationEmail }; 
+module.exports = { sendEmail, sendOrderConfirmationEmail };

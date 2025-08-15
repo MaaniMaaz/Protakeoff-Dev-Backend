@@ -8,6 +8,10 @@ const orderSchema = new mongoose.Schema({
       takeoffId: String,
       title: String,
       price: Number,
+      generalContractor: {
+        email: String,
+        phone: String
+      },
       blueprintUrl: String,
       files: [
         {

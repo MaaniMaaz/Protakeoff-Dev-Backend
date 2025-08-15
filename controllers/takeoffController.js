@@ -125,7 +125,11 @@ exports.createTakeoff = async (req, res) => {
     console.log('Environment:', isServerless ? 'Serverless' : 'Local Development');
     console.log('Files received:', req.files ? Object.keys(req.files) : 'No files');
     
-    const { title, projectType, projectSize, zipCode, address, price, features, specifications, tags, isActive, expirationDate, createdBy } = req.body;
+    const { title, projectType, projectSize, zipCode, address, price, features, specifications, tags, isActive, expirationDate, createdBy, generalContractor } = req.body;
+    
+    // Debug logging for generalContractor
+    console.log('Received generalContractor:', generalContractor);
+    console.log('Type of generalContractor:', typeof generalContractor);
     let files = [];
     let pdfPreview = [];
 
@@ -262,36 +266,72 @@ exports.createTakeoff = async (req, res) => {
       }
     }
 
-    // Parse features, specifications, tags if sent as JSON strings
+    // Parse features, specifications, tags, generalContractor if sent as JSON strings
     let parsedFeatures = features;
     let parsedSpecifications = specifications;
     let parsedTags = tags;
+    let parsedGeneralContractor = generalContractor;
+    
     if (typeof features === 'string') {
       try { parsedFeatures = JSON.parse(features); } catch {}
     }
     if (typeof specifications === 'string') {
       try { parsedSpecifications = JSON.parse(specifications); } catch {}
     }
+    
+    // Ensure specifications has the required structure
+    if (parsedSpecifications && typeof parsedSpecifications === 'object') {
+      parsedSpecifications = {
+        area: parsedSpecifications.area,
+        complexity: parsedSpecifications.complexity,
+        materials: parsedSpecifications.materials || [],
+        estimatedHours: parsedSpecifications.estimatedHours
+      };
+    }
     if (typeof tags === 'string') {
       try { parsedTags = JSON.parse(tags); } catch {}
     }
-    const takeoff = new Takeoff({
+    if (typeof generalContractor === 'string') {
+      try { parsedGeneralContractor = JSON.parse(generalContractor); } catch {}
+    }
+    
+    // Debug logging after parsing
+    console.log('Parsed generalContractor:', parsedGeneralContractor);
+    
+    // Parse boolean fields
+    const parsedIsActive = isActive === 'string' ? isActive === 'true' : Boolean(isActive);
+    
+    // Parse numeric fields
+    const parsedPrice = Number(price);
+    
+    // Parse date fields
+    const parsedExpirationDate = new Date(expirationDate);
+    
+    const takeoffData = {
       title,
       projectType,
       projectSize,
       zipCode,
       address,
-      price,
+      price: parsedPrice,
       features: parsedFeatures,
       specifications: parsedSpecifications,
-      expirationDate,
+      expirationDate: parsedExpirationDate,
       files,
       pdfPreview,
       tags: parsedTags,
-      isActive,
-      createdBy
-    });
+      isActive: parsedIsActive,
+      createdBy,
+      generalContractor: parsedGeneralContractor
+    };
+    
+    console.log('Final takeoff data before saving:', JSON.stringify(takeoffData, null, 2));
+    
+    const takeoff = new Takeoff(takeoffData);
     await takeoff.save();
+    
+    console.log('Saved takeoff object:', JSON.stringify(takeoff.toObject(), null, 2));
+    
     res.status(201).json(takeoff);
   } catch (err) {
     if (err.name === 'ValidationError') {
@@ -453,7 +493,7 @@ exports.getTakeoffById = async (req, res) => {
 // UPDATE Takeoff
 exports.updateTakeoff = async (req, res) => {
   try {
-    const { title, description, projectType, projectSize, zipCode, address, price, features, specifications, tags, isActive, expirationDate } = req.body;
+    const { title, description, projectType, projectSize, zipCode, address, price, features, specifications, tags, isActive, expirationDate, generalContractor } = req.body;
     let files = [];
     let pdfPreview = [];
 
@@ -602,6 +642,7 @@ exports.updateTakeoff = async (req, res) => {
       tags: parsedTags,
       expirationDate,
       isActive,
+      generalContractor,
       updatedAt: new Date()
     };
     if (files.length > 0) update.$push = { files: { $each: files } };

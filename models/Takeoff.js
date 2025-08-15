@@ -40,6 +40,11 @@ const takeoffSchema = new mongoose.Schema({
     materials: { type: [String], required: false },
     estimatedHours: { type: Number, required: false }
   },
+  // General Contractor Contact Information
+  generalContractor: {
+    email: { type: String, required: false },
+    phone: { type: String, required: false }
+  },
   expirationDate: { type: Date, required: true },
   files: { type: [fileSchema], required: false, default: [] },
   pdfPreview: { type: [pdfPreviewSchema], required: false, default: [] },

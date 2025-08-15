@@ -70,6 +70,10 @@ router.post('/checkout', async (req, res) => {
         takeoffId: item.id,
         title: item.title,
         price: item.price,
+        generalContractor: takeoff && takeoff.generalContractor ? {
+          email: takeoff.generalContractor.email,
+          phone: takeoff.generalContractor.phone
+        } : null,
         files: takeoff && takeoff.files ? takeoff.files.map(file => ({
           filename: file.filename,
           originalName: file.originalName,
